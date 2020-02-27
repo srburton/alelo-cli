@@ -1,9 +1,11 @@
 ﻿using System;
 using System.IO;
+using System.CommandLine;
+using System.CommandLine.Invocation;
 
 namespace Alelo.Console
 {
-   internal static class App
+    internal static class App
     {
         private static void Main()
         {
@@ -13,6 +15,62 @@ namespace Alelo.Console
 
             if (!Directory.Exists(aleloHome))
                 Directory.CreateDirectory(aleloHome);
+
+            #region Application commands
+
+            Command Profile()
+            {
+                var profileCommand = new Command("profile",
+                    "Select default, create, delete and list user profiles for Meu Alelo")
+                {
+                    new Option<bool>(new[] {"--list", "-l"})
+                        {Description = $"List available profiles under current PULGA_HOME ({aleloHome})"},
+                    new Option<string>(new[] {"--create", "-c"})
+                    {
+                        Description = $"Create new profiles under current PULGA_HOME ({aleloHome})",
+                        Argument = new Argument<string>
+                            {Arity = ArgumentArity.ExactlyOne, Name = "name", Description = "Name to new profile"}
+                    },
+                    new Option<string>(new[] {"--delete", "-d"})
+                    {
+                        Description = $"Delete a profiles under current PULGA_HOME ({aleloHome})",
+                        Argument = new Argument<string>
+                        {
+                            Arity = ArgumentArity.ExactlyOne, Name = "delete",
+                            Description = "Name of the profile to delete"
+                        }
+                    },
+                    new Option<string>(new[] {"--profile", "-p"})
+                    {
+                        Description =
+                            $"Select a default profile for this session under current PULGA_HOME ({aleloHome})",
+                        Argument = new Argument<string>
+                        {
+                            Arity = ArgumentArity.ExactlyOne, Name = "profile",
+                            Description = "Name of the profile to use"
+                        }
+                    },
+                    new Option<bool>(new[] {"--current-profile"}) {Description = "Profile used by default"}
+                };
+
+                profileCommand.Handler =
+                    CommandHandler.Create<bool, string, string, string, bool>((list, create, delete, profile,
+                        currentProfile) =>
+                    {
+                        // TODO:
+                        // - Add the logic :v
+                    });
+
+                return profileCommand;
+            }
+
+            #endregion
+
+            var commands = new RootCommand
+            {
+                Profile()
+            };
+
         }
     }
 }
