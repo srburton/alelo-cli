@@ -1,4 +1,4 @@
-# Pulga - Saltitando entre cartões
+# `alelo-cli` gerenciando os *vales* na linha de comando
 
 O objetivo da ferramenta é facilitar o consumo e gestão de extratos e cartões, baseado nos fluxos correspondentes ao da aplicação.
 
