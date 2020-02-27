@@ -75,7 +75,10 @@ namespace Alelo.Console
                     "Select default and list user cards")
                 {
                     new Option<bool>(new[] {"--list", "-l"})
-                        {Description = $"List available cards under current profile ({aleloDefault})"},
+                    {
+                        Description =
+                            $"List available cards under current profile ({(string.IsNullOrEmpty(aleloDefault) ? "No profiles created" : aleloDefault)})"
+                    },
                 };
 
                 cardCommand.Handler =
