@@ -1,13 +1,14 @@
 ﻿using System;
 using System.IO;
 using System.CommandLine;
+using System.Threading.Tasks;
 using System.CommandLine.Invocation;
 
 namespace Alelo.Console
 {
     internal static class App
     {
-        private static void Main()
+        private static async Task<int> Main(string[] args)
         {
             var aleloHome = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ALELO_HOME"))
                 ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), ".alelo")
@@ -78,7 +79,7 @@ namespace Alelo.Console
                 };
 
                 cardCommand.Handler =
-                    CommandHandler.Create<bool>((list) =>
+                    CommandHandler.Create<bool>(list =>
                     {
                         // TODO:
                         // - Add the logic :v
@@ -94,6 +95,9 @@ namespace Alelo.Console
                 Profile(),
                 Card()
             };
+
+            commands.Description = "Meu Alelo as a command line interface, but better";
+            return await commands.InvokeAsync(args).ConfigureAwait(true);
         }
     }
 }
