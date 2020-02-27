@@ -13,6 +13,10 @@ namespace Alelo.Console
                 ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), ".alelo")
                 : Environment.GetEnvironmentVariable("ALELO_HOME");
 
+            var aleloDefault = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ALELO_DEFAULT_PROFILE"))
+                ? string.Empty
+                : Environment.GetEnvironmentVariable("ALELO_DEFAULT_PROFILE");
+
             if (!Directory.Exists(aleloHome))
                 Directory.CreateDirectory(aleloHome);
 
@@ -64,13 +68,32 @@ namespace Alelo.Console
                 return profileCommand;
             }
 
+            Command Card()
+            {
+                var cardCommand = new Command("card",
+                    "Select default and list user cards")
+                {
+                    new Option<bool>(new[] {"--list", "-l"})
+                        {Description = $"List available cards under current profile ({aleloDefault})"},
+                };
+
+                cardCommand.Handler =
+                    CommandHandler.Create<bool>((list) =>
+                    {
+                        // TODO:
+                        // - Add the logic :v
+                    });
+
+                return cardCommand;
+            }
+
             #endregion
 
             var commands = new RootCommand
             {
-                Profile()
+                Profile(),
+                Card()
             };
-
         }
     }
 }
