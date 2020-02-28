@@ -14,9 +14,13 @@ namespace Alelo.Console
                 ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), ".alelo")
                 : Environment.GetEnvironmentVariable("ALELO_HOME");
 
-            var aleloDefault = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ALELO_DEFAULT_PROFILE"))
+            var aleloDefaultProfile = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ALELO_DEFAULT_PROFILE"))
                 ? string.Empty
                 : Environment.GetEnvironmentVariable("ALELO_DEFAULT_PROFILE");
+
+            var aleloDefaultCard = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ALELO_DEFAULT_CARD"))
+                ? string.Empty
+                : Environment.GetEnvironmentVariable("ALELO_DEFAULT_CARD");
 
             if (!Directory.Exists(aleloHome))
                 Directory.CreateDirectory(aleloHome);
@@ -77,8 +81,8 @@ namespace Alelo.Console
                     new Option<bool>(new[] {"--list", "-l"})
                     {
                         Description =
-                            $"List available cards under current profile ({(string.IsNullOrEmpty(aleloDefault) ? "No profiles created" : aleloDefault)})"
-                    },
+                            $"List available cards under current profile ({(string.IsNullOrEmpty(aleloDefaultProfile) ? "No profiles created" : aleloDefaultProfile)})"
+                    }
                 };
 
                 cardCommand.Handler =
@@ -91,13 +95,31 @@ namespace Alelo.Console
                 return cardCommand;
             }
 
+            Option Statement()
+            {
+                var statementOption = new Option(new[] {"-s", "--statement"})
+                {
+                    Description =
+                        $"List last transactions for the default card ({(string.IsNullOrEmpty(aleloDefaultProfile) ? "No profiles created for take card" : aleloDefaultProfile)})"
+                };
+
+                return statementOption;
+            }
+
             #endregion
 
             var commands = new RootCommand
             {
                 Profile(),
-                Card()
+                Card(),
+                Statement()
             };
+
+            commands.Handler = CommandHandler.Create<bool>(statement =>
+            {
+                // TODO:
+                // - Add the logic :v
+            });
 
             commands.Description = "Meu Alelo as a command line interface, but better";
             return await commands.InvokeAsync(args).ConfigureAwait(true);
