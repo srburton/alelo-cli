@@ -121,6 +121,8 @@ namespace Alelo.Console
                         currentProfile) =>
                     {
                         if (list)
+                        {
+                            WriteLine("[+] Available profiles:");
                             GetProfilesNames(false)
                                 .Select(p =>
                                 {
@@ -130,8 +132,10 @@ namespace Alelo.Console
                                     return p;
                                 })
                                 .ToList()
-                                .ForEach(WriteLine);
-
+                                .ForEach(p => WriteLine($" - {p}"));
+                            WriteLine();
+                        }
+                           
                         if (!string.IsNullOrEmpty(delete))
                         {
                             delete = delete.Trim();
