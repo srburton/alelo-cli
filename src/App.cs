@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using System.CommandLine.Invocation;
 using System.Text.Json.Serialization;
 
+using static System.Console;
+
 namespace Alelo.Console
 {
     internal static class App
@@ -26,8 +28,56 @@ namespace Alelo.Console
                 ? string.Empty
                 : Environment.GetEnvironmentVariable("ALELO_DEFAULT_CARD");
 
+            var globalVerbose = false;
+
             if (!Directory.Exists(aleloHome))
                 Directory.CreateDirectory(aleloHome);
+
+            #region Profile management
+
+            async Task CreateProfile(string profileName)
+            {
+                if (string.IsNullOrEmpty(profileName.Trim()))
+                {
+                    WriteLine("[!] Invalid profile name!");
+                    Environment.Exit(1);
+                }
+
+                profileName = profileName.Trim();
+
+                if (GetProfilesNames(false).Contains(profileName))
+                {
+                    WriteLine("[!] Profile name already in use!");
+                    Environment.Exit(1);
+                }
+
+                try
+                {
+                    await using var fs = File.Create(Path.Combine(aleloHome, profileName + ".json"));
+                    await JsonSerializer.SerializeAsync(fs, new Profile
+                    {
+                        Name = profileName
+                    });
+                }
+                catch (IOException err)
+                {
+                    WriteLine("[!] Error when creating the profile file!");
+                    WriteLine($" > {err.Message}");
+
+                    Environment.Exit(1);
+                }
+                catch (Exception err)
+                {
+                    WriteLine("[!] Unknown error happened!");
+                    WriteLine($" > {err.Message}");
+
+                    Environment.Exit(1);
+                }
+
+                WriteLine($"[+] Profile {profileName} created under current ALELO_HOME ({aleloHome})");
+            }
+
+            #endregion
 
             #region Application commands
 
@@ -67,9 +117,24 @@ namespace Alelo.Console
                 };
 
                 profileCommand.Handler =
-                    CommandHandler.Create<bool, string, string, string, bool>((list, create, delete, profile,
+                    CommandHandler.Create<bool, string, string, string, bool>(async (list, create, delete, profile,
                         currentProfile) =>
                     {
+                        if (list)
+                            GetProfilesNames(false)
+                                .Select(p =>
+                                {
+                                    if (aleloDefaultProfile == p)
+                                        p += " (Current default profile)";
+
+                                    return p;
+                                })
+                                .ToList()
+                                .ForEach(WriteLine);
+
+                        if (!string.IsNullOrEmpty(create))
+                            await CreateProfile(create);
+
                         // TODO:
                         // - Add the logic :v
                     });
@@ -110,6 +175,16 @@ namespace Alelo.Console
                 return statementOption;
             }
 
+            static Option Verbose()
+            {
+                var statementOption = new Option(new[] {"-v", "--verbose"})
+                {
+                    Description = "Increase the application verbose"
+                };
+
+                return statementOption;
+            }
+
             #endregion
 
             #region Helpers
@@ -118,9 +193,11 @@ namespace Alelo.Console
                 withExtension
                     ? Directory.GetFiles(aleloHome)
                         .Where(f => f.EndsWith(".json"))
+                        .Select(Path.GetFileName)
                     : Directory.GetFiles(aleloHome)
                         .Where(f => f.EndsWith(".json"))
-                        .Select(f => f.Replace(".json", string.Empty));
+                        .Select(f => f.Replace(".json", string.Empty))
+                        .Select(Path.GetFileName);
 
             Func<IEnumerable<string>, IEnumerable<Profile>> getProfiles = profilesWithExtension =>
             {
@@ -140,13 +217,33 @@ namespace Alelo.Console
             {
                 Profile(),
                 Card(),
-                Statement()
+                Statement(),
+                Verbose()
             };
 
-            commands.Handler = CommandHandler.Create<bool>(statement =>
+            commands.Handler = CommandHandler.Create<bool, bool>((statement, verbose) =>
             {
-                // TODO:
-                // - Add the logic :v
+                if (verbose)
+                    globalVerbose = true;
+
+                if (!GetProfilesNames(false).Any())
+                {
+                    WriteLine("[!] No profiles found, create one first!");
+                    WriteLine(" > Try --help");
+
+                    Environment.Exit(1);
+                }
+
+                if (GetProfilesNames(false).Count() > 1 && string.IsNullOrEmpty(aleloDefaultProfile))
+                {
+                    WriteLine("[!] More than one profile found!");
+                    WriteLine(" > Try --help");
+
+                    Environment.Exit(1);
+                }
+
+                if (globalVerbose)
+                    WriteLine($"[VERBOSE] Selected profile {aleloDefaultProfile}");
             });
 
             commands.Description = "Meu Alelo as a command line interface, but better";
@@ -163,43 +260,30 @@ namespace Alelo.Console
 
     internal class Session
     {
-        [JsonPropertyName("token")]
-        public string Token { get; set; }
+        [JsonPropertyName("token")] public string Token { get; set; }
 
-        [JsonPropertyName("email")]
-        public string EmailAddress { get; set; }
+        [JsonPropertyName("email")] public string EmailAddress { get; set; }
 
-        [JsonPropertyName("firstName")]
-        public string FirstName { get; set; }
+        [JsonPropertyName("firstName")] public string FirstName { get; set; }
 
-        [JsonPropertyName("lastName")]
-        public string LastName { get; set; }
+        [JsonPropertyName("lastName")] public string LastName { get; set; }
 
-        [JsonIgnore]
-        public string FullName => FirstName + LastName;
+        [JsonIgnore] public string FullName => FirstName + LastName;
 
-        [JsonPropertyName("gender")]
-        public string Gender { get; set; }
+        [JsonPropertyName("gender")] public string Gender { get; set; }
 
-        [JsonPropertyName("maskedEmail")]
-        public string MaskedEmailAddress { get; set; }
+        [JsonPropertyName("maskedEmail")] public string MaskedEmailAddress { get; set; }
 
-        [JsonPropertyName("cpf")]
-        public string Document { get; set; }
+        [JsonPropertyName("cpf")] public string Document { get; set; }
 
-        [JsonPropertyName("birthDate")]
-        public string BirthDate { get; set; }
+        [JsonPropertyName("birthDate")] public string BirthDate { get; set; }
 
-        [JsonPropertyName("ddd")]
-        public string Ddd { get; set; }
+        [JsonPropertyName("ddd")] public string Ddd { get; set; }
 
-        [JsonPropertyName("phone")]
-        public string Phone { get; set; }
+        [JsonPropertyName("phone")] public string Phone { get; set; }
 
-        [JsonIgnore]
-        public string FullPhone => Ddd + Phone;
+        [JsonIgnore] public string FullPhone => Ddd + Phone;
 
-        [JsonPropertyName("userId")]
-        public string UserId { get; set; }
+        [JsonPropertyName("userId")] public string UserId { get; set; }
     }
 }
