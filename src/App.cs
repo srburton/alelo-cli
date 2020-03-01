@@ -132,6 +132,20 @@ namespace Alelo.Console
                                 .ToList()
                                 .ForEach(WriteLine);
 
+                        if (!string.IsNullOrEmpty(delete))
+                        {
+                            delete = delete.Trim();
+
+                            if (!GetProfilesNames(false).Contains(delete))
+                            {
+                                WriteLine("[!] Profile not found!");
+                                Environment.Exit(1);
+                            }
+
+                            File.Delete(Path.Combine(aleloHome, delete + ".json"));
+                            WriteLine($"[+] Profile {delete} removed");
+                        }
+
                         if (!string.IsNullOrEmpty(create))
                             await CreateProfile(create);
 
