@@ -1,7 +1,10 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
+using System.Text.Json;
 using System.CommandLine;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using System.CommandLine.Invocation;
 
 namespace Alelo.Console
@@ -15,7 +18,7 @@ namespace Alelo.Console
                 : Environment.GetEnvironmentVariable("ALELO_HOME");
 
             var aleloDefaultProfile = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ALELO_DEFAULT_PROFILE"))
-                ? string.Empty
+                ? GetProfilesNames(false).FirstOrDefault()
                 : Environment.GetEnvironmentVariable("ALELO_DEFAULT_PROFILE");
 
             var aleloDefaultCard = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ALELO_DEFAULT_CARD"))
@@ -108,6 +111,30 @@ namespace Alelo.Console
 
             #endregion
 
+            #region Helpers
+
+            IEnumerable<string> GetProfilesNames(bool withExtension) =>
+                withExtension
+                    ? Directory.GetFiles(aleloHome)
+                        .Where(f => f.EndsWith(".json"))
+                    : Directory.GetFiles(aleloHome)
+                        .Where(f => f.EndsWith(".json"))
+                        .Select(f => f.Replace(".json", string.Empty));
+
+            Func<IEnumerable<string>, IEnumerable<Profile>> getProfiles = profilesWithExtension =>
+            {
+                var collection = new List<Profile>();
+
+                profilesWithExtension
+                    .ToList()
+                    .ForEach(async pn =>
+                        collection.Add(JsonSerializer.Deserialize<Profile>(await File.ReadAllTextAsync(pn))));
+
+                return collection;
+            };
+
+            #endregion
+
             var commands = new RootCommand
             {
                 Profile(),
@@ -124,5 +151,15 @@ namespace Alelo.Console
             commands.Description = "Meu Alelo as a command line interface, but better";
             return await commands.InvokeAsync(args).ConfigureAwait(true);
         }
+    }
+
+    internal class Profile
+    {
+
+    }
+
+    internal class Session
+    {
+
     }
 }
