@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Security;
 using System.Text.Json;
 using System.CommandLine;
 using System.Threading.Tasks;
@@ -29,6 +31,12 @@ namespace Alelo.Console
                 : Environment.GetEnvironmentVariable("ALELO_DEFAULT_CARD");
 
             var globalVerbose = false;
+
+            var client = new HttpClient(new HttpClientHandler
+            {
+                UseCookies = false,
+                AllowAutoRedirect = false
+            });
 
             if (!Directory.Exists(aleloHome))
                 Directory.CreateDirectory(aleloHome);
@@ -60,9 +68,33 @@ namespace Alelo.Console
                     Environment.Exit(1);
                 }
 
-                if (profile.Session is null)
+                if (string.IsNullOrEmpty(profile.Session.Token))
                 {
-                    WriteLine($"[!] Session is not created, creating a new one...");
+                    WriteLine("[!] Session is not created, creating a new one...");
+                    
+                    Write("[+] Profile CPF: ");
+                    var cpf = ReadLine();
+
+                    Write("[+] Password: ");
+                    var password = new SecureString();
+                    var nextKey = ReadKey(true);
+
+                    while (nextKey.Key != ConsoleKey.Enter)
+                    {
+                        if (nextKey.Key == ConsoleKey.Backspace)
+                            if (password.Length > 0)
+                                password.RemoveAt(password.Length - 1);
+                            else
+                                password.AppendChar(nextKey.KeyChar);
+                        nextKey = ReadKey(true);
+                    }
+                    password.MakeReadOnly();
+                    WriteLine();
+
+                    var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, "https:///api/meualelo-web-api/s/p/authentication/login")
+                    {
+
+                    });
                 }
             }
 
