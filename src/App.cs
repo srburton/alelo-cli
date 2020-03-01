@@ -88,38 +88,56 @@ namespace Alelo.Console
                 {
                     new Option<bool>(new[] {"--list", "-l"})
                         {Description = $"List available profiles under current PULGA_HOME ({aleloHome})"},
+
                     new Option<string>(new[] {"--create", "-c"})
                     {
                         Description = $"Create new profiles under current PULGA_HOME ({aleloHome})",
                         Argument = new Argument<string>
-                            {Arity = ArgumentArity.ExactlyOne, Name = "name", Description = "Name to new profile"}
+                            {Arity = ArgumentArity.ExactlyOne, Name = "profile name", Description = "Name to new profile"}
                     },
+
                     new Option<string>(new[] {"--delete", "-d"})
                     {
                         Description = $"Delete a profiles under current PULGA_HOME ({aleloHome})",
                         Argument = new Argument<string>
                         {
-                            Arity = ArgumentArity.ExactlyOne, Name = "delete",
+                            Arity = ArgumentArity.ExactlyOne, Name = "profile name",
                             Description = "Name of the profile to delete"
                         }
                     },
+
                     new Option<string>(new[] {"--profile", "-p"})
                     {
                         Description =
                             $"Select a default profile for this session under current PULGA_HOME ({aleloHome})",
                         Argument = new Argument<string>
                         {
-                            Arity = ArgumentArity.ExactlyOne, Name = "profile",
+                            Arity = ArgumentArity.ExactlyOne, Name = "profile name",
                             Description = "Name of the profile to use"
                         }
                     },
+
+                    new Option<string>(new[] {"--authenticate", "-a"})
+                    {
+                        Description =
+                            $"Authenticate or refresh session for specified profile",
+                        Argument = new Argument<string>
+                        {
+                            Arity = ArgumentArity.ExactlyOne, Name = "profile name",
+                            Description = "Name of the profile to use"
+                        }
+                    },
+
                     new Option<bool>(new[] {"--current-profile"}) {Description = "Profile used by default"}
                 };
 
                 profileCommand.Handler =
-                    CommandHandler.Create<bool, string, string, string, bool>(async (list, create, delete, profile,
-                        currentProfile) =>
+                    CommandHandler.Create<bool, string, string, string, bool, string>(async (list, create, delete, profile,
+                        currentProfile, authenticate) =>
                     {
+                        if (currentProfile)
+                            WriteLine($"[+] Current profile is {(string.IsNullOrEmpty(aleloDefaultProfile) ? "No profiles created" : aleloDefaultProfile)}");
+
                         if (list)
                         {
                             WriteLine("[+] Available profiles:");
@@ -133,7 +151,6 @@ namespace Alelo.Console
                                 })
                                 .ToList()
                                 .ForEach(p => WriteLine($" - {p}"));
-                            WriteLine();
                         }
                            
                         if (!string.IsNullOrEmpty(delete))
@@ -203,6 +220,17 @@ namespace Alelo.Console
                 return statementOption;
             }
 
+            static Option ApplicationEnvironment()
+            {
+                var statementOption = new Option(new[] { "-e", "--env" })
+                {
+                    Description = "Show application environment variables"
+                };
+
+                return statementOption;
+            }
+
+
             #endregion
 
             #region Helpers
@@ -236,13 +264,35 @@ namespace Alelo.Console
                 Profile(),
                 Card(),
                 Statement(),
-                Verbose()
+                Verbose(),
+                ApplicationEnvironment()
             };
 
-            commands.Handler = CommandHandler.Create<bool, bool>((statement, verbose) =>
+            commands.Handler = CommandHandler.Create<bool, bool, bool>((statement, verbose, env) =>
             {
                 if (verbose)
                     globalVerbose = true;
+
+                if (env)
+                {
+                    WriteLine("[+] Application environment variables:");
+
+                    var envHome = Environment.GetEnvironmentVariable("ALELO_HOME");
+                    var envProfile = Environment.GetEnvironmentVariable("ALELO_DEFAULT_PROFILE");
+                    var envCard = Environment.GetEnvironmentVariable("ALELO_DEFAULT_CARD");
+
+                    WriteLine(string.IsNullOrEmpty(envHome)
+                        ? $" > ALELO_HOME is empty, default value in use: {aleloHome}"
+                        : $" > ALELO_HOME {envHome}");
+
+                    WriteLine(string.IsNullOrEmpty(envProfile)
+                        ? $" > ALELO_DEFAULT_PROFILE is empty, default value in use: {(string.IsNullOrEmpty(aleloDefaultProfile) ? "No profiles created" : aleloDefaultProfile)}"
+                        : $" > ALELO_DEFAULT_PROFILE {envProfile}");
+
+                    WriteLine(string.IsNullOrEmpty(envCard)
+                        ? $" > ALELO_DEFAULT_CARD is empty, default value in use: {(string.IsNullOrEmpty(aleloDefaultCard) ? "Card not found, check if you have a active profile session" : aleloDefaultCard)}"
+                        : $" > ALELO_DEFAULT_CARD {envCard}");
+                }
 
                 if (!GetProfilesNames(false).Any())
                 {
