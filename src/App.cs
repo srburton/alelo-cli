@@ -6,6 +6,7 @@ using System.CommandLine;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.CommandLine.Invocation;
+using System.Text.Json.Serialization;
 
 namespace Alelo.Console
 {
@@ -155,11 +156,50 @@ namespace Alelo.Console
 
     internal class Profile
     {
+        public string Name { get; set; }
 
+        public Session Session { get; set; }
     }
 
     internal class Session
     {
+        [JsonPropertyName("token")]
+        public string Token { get; set; }
 
+        [JsonPropertyName("email")]
+        public string EmailAddress { get; set; }
+
+        [JsonPropertyName("firstName")]
+        public string FirstName { get; set; }
+
+        [JsonPropertyName("lastName")]
+        public string LastName { get; set; }
+
+        [JsonIgnore]
+        public string FullName => FirstName + LastName;
+
+        [JsonPropertyName("gender")]
+        public string Gender { get; set; }
+
+        [JsonPropertyName("maskedEmail")]
+        public string MaskedEmailAddress { get; set; }
+
+        [JsonPropertyName("cpf")]
+        public string Document { get; set; }
+
+        [JsonPropertyName("birthDate")]
+        public string BirthDate { get; set; }
+
+        [JsonPropertyName("ddd")]
+        public string Ddd { get; set; }
+
+        [JsonPropertyName("phone")]
+        public string Phone { get; set; }
+
+        [JsonIgnore]
+        public string FullPhone => Ddd + Phone;
+
+        [JsonPropertyName("userId")]
+        public string UserId { get; set; }
     }
 }
