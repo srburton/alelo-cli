@@ -35,6 +35,37 @@ namespace Alelo.Console
 
             #region Profile management
 
+            async Task AuthenticateProfile(string profileName)
+            {
+                if (string.IsNullOrEmpty(profileName.Trim()))
+                {
+                    WriteLine("[!] Invalid profile name!");
+                    Environment.Exit(1);
+                }
+
+                if (!GetProfilesNames(false).Contains(profileName))
+                {
+                    WriteLine("[!] Profile name not found!");
+                    Environment.Exit(1);
+                }
+
+                profileName = profileName.Trim();
+
+                var profile = GetProfiles()
+                    .FirstOrDefault(p => p.Name == profileName);
+
+                if (profile is null || string.IsNullOrEmpty(profile.Name))
+                {
+                    WriteLine($"[!] Unable to deserialize the profile, delete {profileName} and create again!");
+                    Environment.Exit(1);
+                }
+
+                if (profile.Session is null)
+                {
+                    WriteLine($"[!] Session is not created, creating a new one...");
+                }
+            }
+
             async Task CreateProfile(string profileName)
             {
                 if (string.IsNullOrEmpty(profileName.Trim()))
@@ -56,7 +87,8 @@ namespace Alelo.Console
                     await using var fs = File.Create(Path.Combine(aleloHome, profileName + ".json"));
                     await JsonSerializer.SerializeAsync(fs, new Profile
                     {
-                        Name = profileName
+                        Name = profileName,
+                        Session = new Session()
                     });
                 }
                 catch (IOException err)
@@ -170,6 +202,9 @@ namespace Alelo.Console
                         if (!string.IsNullOrEmpty(create))
                             await CreateProfile(create);
 
+                        if (!string.IsNullOrEmpty(authenticate))
+                            await AuthenticateProfile(authenticate);
+
                         // TODO:
                         // - Add the logic :v
                     });
@@ -230,7 +265,6 @@ namespace Alelo.Console
                 return statementOption;
             }
 
-
             #endregion
 
             #region Helpers
@@ -245,17 +279,15 @@ namespace Alelo.Console
                         .Select(f => f.Replace(".json", string.Empty))
                         .Select(Path.GetFileName);
 
-            Func<IEnumerable<string>, IEnumerable<Profile>> getProfiles = profilesWithExtension =>
+            IEnumerable<Profile> GetProfiles()
             {
                 var collection = new List<Profile>();
 
-                profilesWithExtension
-                    .ToList()
-                    .ForEach(async pn =>
-                        collection.Add(JsonSerializer.Deserialize<Profile>(await File.ReadAllTextAsync(pn))));
+                GetProfilesNames(true).ToList()
+                    .ForEach(async pn => collection.Add(JsonSerializer.Deserialize<Profile>(await File.ReadAllTextAsync(Path.Combine(aleloHome, pn)))));
 
                 return collection;
-            };
+            }
 
             #endregion
 
